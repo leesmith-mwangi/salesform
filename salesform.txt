@@ -1,0 +1,7 @@
+I have a friend who sells beer and alcohol at an army camp
+Now He buys alcohol from the wholesaler in many crates:
+Now he buys certain brands, say like Guiness beer, tusker beer, balozi beer, all in crates, say a crate of beer has 30 bottles right: and he sells a crate for 3000 ksh:
+Well After buying all these crates of different beers, he has a distrubution system, he provides the crates in messes - a mess where people eat you get me or lets just day to restaurants right, there are three of them
+so lets say he distributes 30 crates of guinness to one mess, 25 crates of tusker to one mess, and 30 crates to another one right?
+well this guy needs to know how much stock he currently has in his warehouse right, and he also needs to know how many crates he has distributed per mess right? and he also needs to know how much he is making or should have, when he distributes the crates, he wants to have a dashboard that shows all these metrics, plus a place where he can add the stock he is getting from the supplier/buying, plus a place where he can manage how much he is distributing to the three messes
+thats pretty much it, We can add more features after we achieve the main idea
