@@ -37,6 +37,7 @@ function Reports() {
     // Calculate total value per product from distributions
     const productMap = {};
 
+
     messDetails.forEach(mess => {
       if (mess.products && mess.products.length > 0) {
         mess.products.forEach(product => {
@@ -47,8 +48,8 @@ function Reports() {
               totalCrates: 0
             };
           }
-          productMap[product.product_name].totalValue += parseInt(product.total_value);
-          productMap[product.product_name].totalCrates += parseInt(product.quantity_crates);
+          productMap[product.product_name].totalValue += Number(product.total_value) || 0;
+          productMap[product.product_name].totalCrates += Number(product.quantity) || 0;
         });
       }
     });
@@ -61,12 +62,12 @@ function Reports() {
   };
 
   const getMessPerformance = () => {
-    return messDetails
+        return messDetails
       .map(mess => ({
         name: mess.mess_name,
-        totalValue: parseInt(mess.total_value || 0),
-        totalCrates: parseInt(mess.total_crates || 0),
-        distributions: parseInt(mess.total_distributions || 0)
+        totalValue: Number(mess.total_value) || 0,
+        totalCrates: Number(mess.total_units_received) || 0,
+        distributions: Number(mess.total_distributions) || 0
       }))
       .sort((a, b) => b.totalValue - a.totalValue);
   };
@@ -76,8 +77,9 @@ function Reports() {
   if (!metrics) return null;
 
   const topProducts = getTopProducts();
+  console.log("topProducts:", topProducts);
   const messPerformance = getMessPerformance();
-  const totalRevenue = messDetails.reduce((sum, mess) => sum + parseInt(mess.total_value || 0), 0);
+  const totalRevenue = messDetails.reduce((sum, mess) => sum + (Number(mess.total_value) || 0), 0);
 
   return (
     <div>
@@ -99,9 +101,9 @@ function Reports() {
           </div>
 
           <div className="metric-card blue">
-            <div className="metric-label">Total Crates Distributed</div>
-            <div className="metric-value">{metrics.stock.total_distributed_crates}</div>
-            <div className="metric-label">crates</div>
+            <div className="metric-label">Total Units Distributed</div>
+            <div className="metric-value">{metrics.stock?.total_distributed_units || 0}</div>
+            <div className="metric-label">units</div>
           </div>
 
           <div className="metric-card orange">
@@ -199,7 +201,7 @@ function Reports() {
           </div>
           <div className="summary-item">
             <span className="summary-label">Available Stock:</span>
-            <span className="summary-value">{metrics.stock.total_stock_crates} crates</span>
+            <span className="summary-value">{metrics.stock?.total_stock_units || 0} units</span>
           </div>
           <div className="summary-item">
             <span className="summary-label">Low Stock Items:</span>
@@ -210,8 +212,8 @@ function Reports() {
           <div className="summary-item">
             <span className="summary-label">Stock Turnover:</span>
             <span className="summary-value">
-              {metrics.stock.total_purchased_crates > 0
-                ? ((metrics.stock.total_distributed_crates / metrics.stock.total_purchased_crates) * 100).toFixed(1)
+              {(Number(metrics.stock?.total_added_units) || 0) > 0
+                ? (((Number(metrics.stock?.total_distributed_units) || 0) / (Number(metrics.stock?.total_added_units) || 1)) * 100).toFixed(1)
                 : 0}%
             </span>
           </div>

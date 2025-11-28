@@ -249,6 +249,29 @@ tbody tr:hover {
   border: 1px solid #f5c6cb;
 }
 
+/* Unit Type Badges */
+.unit-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.unit-badge.unit-crate {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.unit-badge.unit-piece {
+  background-color: #f3e5f5;
+  color: #6a1b9a;
+  border: 1px solid #ce93d8;
+}
+
 /* Mess Detail Cards */
 .mess-detail-card {
   background: #f8f9fa;
@@ -766,4 +789,194 @@ tbody tr:hover {
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
+
+/* Financial Summary Styles */
+.financial-summary {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.financial-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.financial-item:last-child {
+  border-bottom: none;
+}
+
+.financial-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.financial-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.financial-value.total {
+  color: #007bff;
+}
+
+.financial-value.paid {
+  color: #28a745;
+}
+
+.financial-value.balance {
+  font-size: 1.5rem;
+}
+
+.financial-value.balance.debt {
+  color: #dc3545;
+}
+
+.financial-value.balance.clear {
+  color: #28a745;
+}
+
+.balance-item {
+  background-color: #fff;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  border-radius: 6px;
+  border: 2px solid #e9ecef;
+}
+
+.balance-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.balance-badge.debt {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.balance-badge.clear {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.stat-box {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  text-align: center;
+}
+
+.stat-box span {
+  display: block;
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.stat-box strong {
+  display: block;
+  font-size: 1.5rem;
+  color: #212529;
+}
+
+.btn-action {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.btn-action:hover {
+  background-color: #0056b3;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-submit {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  width: 100%;
+  max-width: 300px;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.page-header p {
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 1rem;
 }

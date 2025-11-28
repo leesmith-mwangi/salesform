@@ -129,3 +129,32 @@ exports.getActivityTimeline = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get profit analysis by product
+exports.getProfitAnalysisByProduct = async (req, res, next) => {
+  try {
+    const analysis = await Dashboard.getProfitAnalysisByProduct();
+
+    res.json({
+      success: true,
+      count: analysis.length,
+      data: analysis
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get profit summary
+exports.getProfitSummary = async (req, res, next) => {
+  try {
+    const summary = await Dashboard.getProfitSummary();
+
+    res.json({
+      success: true,
+      data: summary
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -7,7 +7,8 @@ class Distribution {
       SELECT
         d.*,
         p.name as product_name,
-        p.bottles_per_crate,
+        p.units_per_package,
+        p.unit_type,
         m.name as mess_name,
         m.location as mess_location
       FROM distributions d
@@ -27,8 +28,8 @@ class Distribution {
       SELECT
         d.*,
         p.name as product_name,
-        p.bottles_per_crate,
-        p.price_per_crate as current_price_per_crate,
+        p.units_per_package,
+        p.unit_type,
         m.name as mess_name,
         m.location as mess_location,
         m.contact_person,
@@ -49,7 +50,8 @@ class Distribution {
       SELECT
         d.*,
         p.name as product_name,
-        p.bottles_per_crate
+        p.units_per_package,
+        p.unit_type
       FROM distributions d
       JOIN products p ON d.product_id = p.id
       WHERE d.mess_id = $1
@@ -89,8 +91,10 @@ class Distribution {
       const {
         mess_id,
         product_id,
-        quantity_crates,
-        price_per_crate,
+        quantity,
+        price_per_unit,
+        unit_type,
+        attendant_id,
         distribution_date,
         notes
       } = distributionData;
@@ -102,9 +106,10 @@ class Distribution {
       const stockResult = await client.query(stockQuery, [product_id]);
       const availableStock = parseInt(stockResult.rows[0].available_stock);
 
-      if (availableStock < quantity_crates) {
+      if (availableStock < quantity) {
+        const unitLabel = unit_type === 'piece' ? 'pieces' : 'crates';
         throw new Error(
-          `Insufficient stock. Available: ${availableStock} crates, Requested: ${quantity_crates} crates`
+          `Insufficient stock. Available: ${availableStock} ${unitLabel}, Requested: ${quantity} ${unitLabel}`
         );
       }
 
@@ -113,20 +118,24 @@ class Distribution {
         INSERT INTO distributions (
           mess_id,
           product_id,
-          quantity_crates,
-          price_per_crate,
+          quantity,
+          price_per_unit,
+          unit_type,
+          attendant_id,
           distribution_date,
           notes
         )
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `;
 
       const values = [
         mess_id,
         product_id,
-        quantity_crates,
-        price_per_crate,
+        quantity,
+        price_per_unit,
+        unit_type || 'crate',
+        attendant_id || null,
         distribution_date || new Date(),
         notes || null
       ];
@@ -149,8 +158,8 @@ class Distribution {
     const {
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
       distribution_date,
       notes
     } = distributionData;
@@ -160,8 +169,8 @@ class Distribution {
       SET
         mess_id = COALESCE($1, mess_id),
         product_id = COALESCE($2, product_id),
-        quantity_crates = COALESCE($3, quantity_crates),
-        price_per_crate = COALESCE($4, price_per_crate),
+        quantity = COALESCE($3, quantity),
+        price_per_unit = COALESCE($4, price_per_unit),
         distribution_date = COALESCE($5, distribution_date),
         notes = COALESCE($6, notes),
         updated_at = CURRENT_TIMESTAMP
@@ -172,8 +181,8 @@ class Distribution {
     const values = [
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
       distribution_date,
       notes,
       id
@@ -193,7 +202,7 @@ class Distribution {
   // Get total distributed for a product
   static async getTotalDistributed(productId) {
     const query = `
-      SELECT COALESCE(SUM(quantity_crates), 0) as total
+      SELECT COALESCE(SUM(quantity), 0) as total
       FROM distributions
       WHERE product_id = $1
     `;
@@ -226,7 +235,7 @@ class Distribution {
     const query = `
       SELECT
         COUNT(d.id) as total_distributions,
-        SUM(d.quantity_crates) as total_crates,
+        SUM(d.quantity) as total_crates,
         SUM(d.total_value) as total_revenue,
         COUNT(DISTINCT d.mess_id) as messes_served,
         COUNT(DISTINCT d.product_id) as products_distributed
@@ -246,16 +255,17 @@ class Distribution {
         m.name as mess_name,
         m.location as mess_location,
         COUNT(DISTINCT d.id) as total_distributions,
-        SUM(d.quantity_crates) as total_crates,
+        SUM(d.quantity) as total_crates,
         SUM(d.total_value) as total_value,
         json_agg(
           json_build_object(
             'product_id', p.id,
             'product_name', p.name,
-            'quantity_crates', d.quantity_crates,
-            'price_per_crate', d.price_per_crate,
+            'quantity', d.quantity,
+            'price_per_unit', d.price_per_unit,
             'total_value', d.total_value,
-            'distribution_date', d.distribution_date
+            'distribution_date', d.distribution_date,
+            'unit_type', d.unit_type
           ) ORDER BY p.name
         ) FILTER (WHERE d.id IS NOT NULL) as products
       FROM messes m

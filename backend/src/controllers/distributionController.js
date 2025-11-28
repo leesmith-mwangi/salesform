@@ -50,6 +50,7 @@ exports.getDistributionsByMess = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 100;
 
     const distributions = await Distribution.findByMess(messId, limit);
+    console.log("distributions:", distributions);
 
     res.json({
       success: true,
@@ -69,6 +70,7 @@ exports.getDistributionsByProduct = async (req, res, next) => {
 
     const distributions = await Distribution.findByProduct(productId, limit);
 
+
     res.json({
       success: true,
       count: distributions.length,
@@ -85,28 +87,30 @@ exports.createDistribution = async (req, res, next) => {
     const {
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
+      unit_type,
+      attendant_id,
       distribution_date,
       notes
     } = req.body;
 
     // Validation
-    if (!mess_id || !product_id || !quantity_crates || !price_per_crate) {
+    if (!mess_id || !product_id || !quantity || !price_per_unit) {
       return res.status(400).json({
         success: false,
-        error: 'mess_id, product_id, quantity_crates, and price_per_crate are required'
+        error: 'mess_id, product_id, quantity, and price_per_unit are required'
       });
     }
 
-    if (quantity_crates <= 0) {
+    if (quantity <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Quantity must be greater than 0'
       });
     }
 
-    if (price_per_crate <= 0) {
+    if (price_per_unit <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Price must be greater than 0'
@@ -135,8 +139,10 @@ exports.createDistribution = async (req, res, next) => {
     const distribution = await Distribution.create({
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
+      unit_type: unit_type || product.unit_type,
+      attendant_id: attendant_id || null,
       distribution_date,
       notes
     });
@@ -144,13 +150,15 @@ exports.createDistribution = async (req, res, next) => {
     // Get updated stock info
     const updatedProduct = await Product.getWithStock(product_id);
 
+    const unitLabel = product.unit_type === 'piece' ? 'pieces' : 'crates';
+
     res.status(201).json({
       success: true,
-      message: `Distributed ${quantity_crates} crates of ${product.name} to ${mess.name}`,
+      message: `Distributed ${quantity} ${unitLabel} of ${product.name} to ${mess.name}`,
       data: {
         distribution,
         updated_stock: {
-          product_name: updatedProduct.product_name,
+          product_name: updatedProduct.name,
           current_stock: updatedProduct.current_stock,
           total_distributed: updatedProduct.total_distributed
         }
@@ -175,8 +183,8 @@ exports.updateDistribution = async (req, res, next) => {
     const {
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
       distribution_date,
       notes
     } = req.body;
@@ -191,7 +199,7 @@ exports.updateDistribution = async (req, res, next) => {
     }
 
     // Validate quantity if provided
-    if (quantity_crates !== undefined && quantity_crates <= 0) {
+    if (quantity !== undefined && quantity <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Quantity must be greater than 0'
@@ -199,7 +207,7 @@ exports.updateDistribution = async (req, res, next) => {
     }
 
     // Validate price if provided
-    if (price_per_crate !== undefined && price_per_crate <= 0) {
+    if (price_per_unit !== undefined && price_per_unit <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Price must be greater than 0'
@@ -209,8 +217,8 @@ exports.updateDistribution = async (req, res, next) => {
     const distribution = await Distribution.update(id, {
       mess_id,
       product_id,
-      quantity_crates,
-      price_per_crate,
+      quantity,
+      price_per_unit,
       distribution_date,
       notes
     });

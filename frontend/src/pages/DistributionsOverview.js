@@ -50,7 +50,6 @@ function DistributionsOverview({ onNavigate }) {
               <div className="mess-header">
                 <div>
                   <h4>{mess.mess_name}</h4>
-                  <p className="mess-location">📍 {mess.mess_location}</p>
                 </div>
                 <div className="mess-header-stats">
                   <div className="stat-item">
@@ -68,14 +67,24 @@ function DistributionsOverview({ onNavigate }) {
                       <div key={index} className="product-item">
                         <div className="product-name">{product.product_name}</div>
                         <div className="product-details">
-                          <span className="product-quantity">{product.quantity_crates} crates</span>
-                          <span className="product-separator">×</span>
-                          <span className="product-price">{parseInt(product.price_per_crate).toLocaleString()} KSH</span>
-                          <span className="product-separator">=</span>
-                          <strong className="product-total">{parseInt(product.total_value).toLocaleString()} KSH</strong>
+                          {(() => {
+                            const qty = Number(product.quantity) || 0;
+                            const price = Number(product.price_per_unit) || 0;
+                            const total = Number(product.total_value) || 0;
+                            const unitLabel = product.unit_type === 'piece' ? 'piece' : 'crate';
+                            return (
+                              <>
+                                <span className="product-quantity">{qty} {unitLabel}{qty !== 1 ? 's' : ''}</span>
+                                <span className="product-separator">×</span>
+                                <span className="product-price">{price.toLocaleString()} KSH</span>
+                                <span className="product-separator">=</span>
+                                <strong className="product-total">{total.toLocaleString()} KSH</strong>
+                              </>
+                            );
+                          })()}
                         </div>
                         <div className="product-date">
-                          Date: {new Date(product.distribution_date).toLocaleDateString()}
+                          Date: {product.distribution_date ? new Date(product.distribution_date).toLocaleDateString() : '-'}
                         </div>
                       </div>
                     ))}
@@ -84,9 +93,30 @@ function DistributionsOverview({ onNavigate }) {
                   <div className="mess-total">
                     <div className="total-label">Total for {mess.mess_name}:</div>
                     <div className="total-details">
-                      <span className="total-crates">{mess.total_crates || 0} crates</span>
-                      <span className="total-separator">|</span>
-                      <strong className="total-value">{parseInt(mess.total_value || 0).toLocaleString()} KSH</strong>
+                      {(() => {
+                        const totalVal = Number(mess.total_value) || 0;
+                        // Separate crates and pieces
+                        const totalCrates = mess.products
+                          .filter(p => p.unit_type !== 'piece')
+                          .reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
+                        const totalPieces = mess.products
+                          .filter(p => p.unit_type === 'piece')
+                          .reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
+                        
+                        return (
+                          <>
+                            {totalCrates > 0 && (
+                              <span className="total-crates">{totalCrates} crate{totalCrates !== 1 ? 's' : ''}</span>
+                            )}
+                            {totalCrates > 0 && totalPieces > 0 && <span className="total-separator"> + </span>}
+                            {totalPieces > 0 && (
+                              <span className="total-crates">{totalPieces} piece{totalPieces !== 1 ? 's' : ''}</span>
+                            )}
+                            <span className="total-separator">|</span>
+                            <strong className="total-value">{totalVal.toLocaleString()} KSH</strong>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>
@@ -109,7 +139,33 @@ function DistributionsOverview({ onNavigate }) {
           <div className="summary-item">
             <span className="summary-label">Total Crates Distributed:</span>
             <span className="summary-value">
-              {messDetails.reduce((sum, mess) => sum + parseInt(mess.total_crates || 0), 0)}
+              {(() => {
+                const totalCrates = messDetails.reduce((sum, mess) => {
+                  if (mess.products) {
+                    return sum + mess.products
+                      .filter(p => p.unit_type !== 'piece')
+                      .reduce((pSum, p) => pSum + (Number(p.quantity) || 0), 0);
+                  }
+                  return sum;
+                }, 0);
+                return totalCrates;
+              })()}
+            </span>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">Total Pieces Distributed:</span>
+            <span className="summary-value">
+              {(() => {
+                const totalPieces = messDetails.reduce((sum, mess) => {
+                  if (mess.products) {
+                    return sum + mess.products
+                      .filter(p => p.unit_type === 'piece')
+                      .reduce((pSum, p) => pSum + (Number(p.quantity) || 0), 0);
+                  }
+                  return sum;
+                }, 0);
+                return totalPieces;
+              })()}
             </span>
           </div>
           <div className="summary-item">

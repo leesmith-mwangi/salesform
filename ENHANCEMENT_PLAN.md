@@ -146,8 +146,7 @@ router.get('/by-mess-detailed', distributionController.getDetailedDistributionsB
   "data": [
     {
       "mess_id": 1,
-      "mess_name": "Mess 1 - Main Canteen",
-      "mess_location": "Main Camp Block A",
+      "mess_name": "Mess 1",
       "total_distributions": 2,
       "total_crates": 55,
       "total_value": 160000,

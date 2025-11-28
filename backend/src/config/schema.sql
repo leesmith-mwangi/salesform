@@ -6,13 +6,13 @@
 
 -- ============================================
 -- PRODUCTS TABLE
--- Stores information about beer brands
+-- Stores information about beer brands and spirits
 -- ============================================
 CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
-  price_per_crate DECIMAL(10, 2) NOT NULL,
-  bottles_per_crate INTEGER NOT NULL DEFAULT 30,
+  units_per_package INTEGER NOT NULL DEFAULT 30,
+  unit_type VARCHAR(20) DEFAULT 'crate' CHECK (unit_type IN ('crate', 'piece')),
   description TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -41,15 +41,16 @@ CREATE TABLE IF NOT EXISTS messes (
 CREATE TABLE IF NOT EXISTS inventory (
   id SERIAL PRIMARY KEY,
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  quantity_crates INTEGER NOT NULL,
-  purchase_price_per_crate DECIMAL(10, 2),
+  quantity INTEGER NOT NULL,
+  purchase_price_per_unit DECIMAL(10, 2),
+  unit_type VARCHAR(20) DEFAULT 'crate',
   supplier_name VARCHAR(255),
   supplier_contact VARCHAR(100),
   date_added DATE NOT NULL DEFAULT CURRENT_DATE,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT positive_quantity CHECK (quantity_crates > 0)
+  CONSTRAINT positive_quantity CHECK (quantity > 0)
 );
 
 -- ============================================
@@ -60,14 +61,16 @@ CREATE TABLE IF NOT EXISTS distributions (
   id SERIAL PRIMARY KEY,
   mess_id INTEGER NOT NULL REFERENCES messes(id) ON DELETE CASCADE,
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  quantity_crates INTEGER NOT NULL,
-  price_per_crate DECIMAL(10, 2) NOT NULL,
-  total_value DECIMAL(10, 2) GENERATED ALWAYS AS (quantity_crates * price_per_crate) STORED,
+  quantity INTEGER NOT NULL,
+  price_per_unit DECIMAL(10, 2) NOT NULL,
+  unit_type VARCHAR(20) DEFAULT 'crate',
+  attendant_id INTEGER REFERENCES attendants(id),
+  total_value DECIMAL(10, 2) GENERATED ALWAYS AS (quantity * price_per_unit) STORED,
   distribution_date DATE NOT NULL DEFAULT CURRENT_DATE,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT positive_distribution_quantity CHECK (quantity_crates > 0)
+  CONSTRAINT positive_distribution_quantity CHECK (quantity > 0)
 );
 
 -- ============================================
@@ -101,18 +104,26 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_dat
 -- ============================================
 
 -- View: Current warehouse stock by product
+-- Fixed version to prevent Cartesian product issues
 CREATE OR REPLACE VIEW v_current_stock AS
 SELECT
   p.id AS product_id,
   p.name AS product_name,
-  COALESCE(SUM(i.quantity_crates), 0) AS total_purchased,
-  COALESCE(SUM(d.quantity_crates), 0) AS total_distributed,
-  COALESCE(SUM(i.quantity_crates), 0) - COALESCE(SUM(d.quantity_crates), 0) AS current_stock
+  COALESCE(inv.total_purchased, 0) AS total_purchased,
+  COALESCE(dist.total_distributed, 0) AS total_distributed,
+  COALESCE(inv.total_purchased, 0) - COALESCE(dist.total_distributed, 0) AS current_stock
 FROM products p
-LEFT JOIN inventory i ON p.id = i.product_id
-LEFT JOIN distributions d ON p.id = d.product_id
+LEFT JOIN (
+  SELECT product_id, SUM(quantity_crates) AS total_purchased
+  FROM inventory
+  GROUP BY product_id
+) inv ON p.id = inv.product_id
+LEFT JOIN (
+  SELECT product_id, SUM(quantity_crates) AS total_distributed
+  FROM distributions
+  GROUP BY product_id
+) dist ON p.id = dist.product_id
 WHERE p.is_active = true
-GROUP BY p.id, p.name
 ORDER BY p.name;
 
 -- View: Distribution summary by mess
@@ -213,9 +224,9 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Insert the 3 messes
 INSERT INTO messes (name, location, contact_person, phone) VALUES
-('Mess 1 - Main Canteen', 'Main Camp Block A', 'John Doe', '+254-712-345-678'),
-('Mess 2 - Officers Mess', 'Officers Quarters Block B', 'Jane Smith', '+254-723-456-789'),
-('Mess 3 - Junior Ranks Mess', 'Junior Quarters Block C', 'Mike Johnson', '+254-734-567-890')
+('Constables Mess', 'Charles Okumba', '+254-712-345-678'),
+('Officers Mess', 'Patrick Musyoki', '+254-723-456-789'),
+('NCOs Mess',  'Chris Nyandoro', '+254-734-567-890')
 ON CONFLICT (name) DO NOTHING;
 
 -- ============================================

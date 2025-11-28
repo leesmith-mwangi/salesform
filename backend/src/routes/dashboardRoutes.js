@@ -11,5 +11,7 @@ router.get('/revenue', dashboardController.getRevenueByDateRange);
 router.get('/revenue/mess', dashboardController.getRevenueByMess);
 router.get('/revenue/product', dashboardController.getRevenueByProduct);
 router.get('/activity', dashboardController.getActivityTimeline);
+router.get('/profit/analysis', dashboardController.getProfitAnalysisByProduct);
+router.get('/profit/summary', dashboardController.getProfitSummary);
 
 module.exports = router;

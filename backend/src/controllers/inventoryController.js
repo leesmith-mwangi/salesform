@@ -65,8 +65,9 @@ exports.addStock = async (req, res, next) => {
   try {
     const {
       product_id,
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
+      unit_type,
       supplier_name,
       supplier_contact,
       date_added,
@@ -74,14 +75,14 @@ exports.addStock = async (req, res, next) => {
     } = req.body;
 
     // Validation
-    if (!product_id || !quantity_crates) {
+    if (!product_id || !quantity) {
       return res.status(400).json({
         success: false,
-        error: 'product_id and quantity_crates are required'
+        error: 'product_id and quantity are required'
       });
     }
 
-    if (quantity_crates <= 0) {
+    if (quantity <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Quantity must be greater than 0'
@@ -99,8 +100,9 @@ exports.addStock = async (req, res, next) => {
 
     const inventory = await Inventory.addStock({
       product_id,
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
+      unit_type: unit_type || product.unit_type,
       supplier_name,
       supplier_contact,
       date_added,
@@ -110,15 +112,17 @@ exports.addStock = async (req, res, next) => {
     // Get updated product with stock info
     const updatedProduct = await Product.getWithStock(product_id);
 
+    const unitLabel = product.unit_type === 'piece' ? 'pieces' : 'crates';
+
     res.status(201).json({
       success: true,
-      message: `Added ${quantity_crates} crates of ${product.name} to inventory`,
+      message: `Added ${quantity} ${unitLabel} of ${product.name} to inventory`,
       data: {
         inventory,
         updated_stock: {
-          product_name: updatedProduct.product_name,
+          product_name: updatedProduct.name,
           current_stock: updatedProduct.current_stock,
-          total_purchased: updatedProduct.total_purchased
+          total_added: updatedProduct.total_added
         }
       }
     });
@@ -132,8 +136,8 @@ exports.updateInventory = async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
       supplier_name,
       supplier_contact,
       date_added,
@@ -150,7 +154,7 @@ exports.updateInventory = async (req, res, next) => {
     }
 
     // Validate quantity if provided
-    if (quantity_crates !== undefined && quantity_crates <= 0) {
+    if (quantity !== undefined && quantity <= 0) {
       return res.status(400).json({
         success: false,
         error: 'Quantity must be greater than 0'
@@ -158,8 +162,8 @@ exports.updateInventory = async (req, res, next) => {
     }
 
     const inventory = await Inventory.update(id, {
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
       supplier_name,
       supplier_contact,
       date_added,

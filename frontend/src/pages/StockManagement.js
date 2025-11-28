@@ -92,8 +92,9 @@ function StockManagement({ onNavigate }) {
           <thead>
             <tr>
               <th>Product</th>
+              <th>Unit Type</th>
               <th>Available Stock</th>
-              <th>Total Purchased</th>
+              <th>Total Added</th>
               <th>Total Distributed</th>
               <th>Status</th>
             </tr>
@@ -101,19 +102,25 @@ function StockManagement({ onNavigate }) {
           <tbody>
             {filteredStock.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#7f8c8d' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#7f8c8d' }}>
                   No products found
                 </td>
               </tr>
             ) : (
               filteredStock.map((product) => {
                 const status = getStockStatus(product.current_stock);
+                const unitLabel = product.unit_type === 'piece' ? 'pieces' : 'crates';
                 return (
                   <tr key={product.product_id}>
                     <td><strong>{product.product_name}</strong></td>
-                    <td>{product.current_stock} crates</td>
-                    <td>{product.total_purchased} crates</td>
-                    <td>{product.total_distributed} crates</td>
+                    <td>
+                      <span className={`unit-badge ${product.unit_type === 'piece' ? 'unit-piece' : 'unit-crate'}`}>
+                        {product.unit_type === 'piece' ? 'Piece' : 'Crate'}
+                      </span>
+                    </td>
+                    <td>{product.current_stock} {unitLabel}</td>
+                    <td>{product.total_added} {unitLabel}</td>
+                    <td>{product.total_distributed} {unitLabel}</td>
                     <td>
                       <span className={`stock-badge stock-${status.color}`}>
                         {status.label}

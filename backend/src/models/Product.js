@@ -27,29 +27,29 @@ class Product {
 
   // Create new product
   static async create(productData) {
-    const { name, price_per_crate, bottles_per_crate, description } = productData;
+    const { name, price_per_unit, units_per_package, description } = productData;
 
     const query = `
-      INSERT INTO products (name, price_per_crate, bottles_per_crate, description)
+      INSERT INTO products (name, price_per_unit, units_per_package, description)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
-    const values = [name, price_per_crate, bottles_per_crate || 30, description || null];
+    const values = [name, price_per_unit, units_per_package || 30, description || null];
     const result = await pool.query(query, values);
     return result.rows[0];
   }
 
   // Update product
   static async update(id, productData) {
-    const { name, price_per_crate, bottles_per_crate, description, is_active } = productData;
+    const { name, price_per_unit, units_per_package, description, is_active } = productData;
 
     const query = `
       UPDATE products
       SET
         name = COALESCE($1, name),
-        price_per_crate = COALESCE($2, price_per_crate),
-        bottles_per_crate = COALESCE($3, bottles_per_crate),
+        price_per_unit = COALESCE($2, price_per_unit),
+        units_per_package = COALESCE($3, units_per_package),
         description = COALESCE($4, description),
         is_active = COALESCE($5, is_active),
         updated_at = CURRENT_TIMESTAMP
@@ -57,7 +57,7 @@ class Product {
       RETURNING *
     `;
 
-    const values = [name, price_per_crate, bottles_per_crate, description, is_active, id];
+    const values = [name, price_per_unit, units_per_package, description, is_active, id];
     const result = await pool.query(query, values);
     return result.rows[0];
   }
@@ -81,7 +81,7 @@ class Product {
       SELECT
         p.*,
         COALESCE(cs.current_stock, 0) as current_stock,
-        COALESCE(cs.total_purchased, 0) as total_purchased,
+        COALESCE(cs.total_added, 0) as total_added,
         COALESCE(cs.total_distributed, 0) as total_distributed
       FROM products p
       LEFT JOIN v_current_stock cs ON p.id = cs.product_id
@@ -98,7 +98,7 @@ class Product {
       SELECT
         p.*,
         COALESCE(cs.current_stock, 0) as current_stock,
-        COALESCE(cs.total_purchased, 0) as total_purchased,
+        COALESCE(cs.total_added, 0) as total_added,
         COALESCE(cs.total_distributed, 0) as total_distributed
       FROM products p
       LEFT JOIN v_current_stock cs ON p.id = cs.product_id

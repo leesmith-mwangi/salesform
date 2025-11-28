@@ -1,0 +1,209 @@
+const pool = require('./src/config/database');
+
+// Edit this array to add/remove products
+const PRODUCTS_TO_ADD = [
+  {
+    name: 'Tusker Lager',
+    units_per_package: 24,
+    unit_type: 'crate',
+    description: 'Premium Kenyan Lager Beer'
+  },
+  {
+    name: 'Guinness Stout',
+    units_per_package: 24,
+    unit_type: 'crate',
+    description: 'Guinness Original Stout'
+  },
+  {
+    name: 'White Cap',
+    units_per_package: 24,
+    unit_type: 'crate',
+
+  },
+  {
+    name: 'Pilsner',
+    units_per_package: 24,
+    unit_type: 'crate',
+    },
+  {
+    name: 'Heineken',
+    units_per_package: 24,
+    unit_type: 'crate',
+  },
+  {
+    name: 'Johnnie Walker Black',
+    units_per_package: 1,
+    unit_type: 'piece',
+    description: 'Johnnie Walker Black Label Whisky 750ml'
+  },
+  {
+    name: 'Smirnoff Vodka',
+    units_per_package: 1,
+    unit_type: 'piece',
+    description: 'Smirnoff Vodka 750ml'
+  },
+  {
+    name: 'Baileys Irish Cream',
+    units_per_package: 1,
+    unit_type: 'piece',
+    description: 'Baileys Original Irish Cream 750ml'
+  }
+];
+
+// Edit this array with product IDs or names to delete
+const PRODUCTS_TO_DELETE = [
+  // Examples (uncomment to use):
+  // { name: 'Old Product Name' },
+  // { id: 5 },
+];
+
+async function addProducts() {
+  const client = await pool.connect();
+
+  try {
+    console.log('📦 ADDING NEW PRODUCTS...\n');
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const product of PRODUCTS_TO_ADD) {
+      try {
+        const result = await client.query(
+          `INSERT INTO products (name, units_per_package, unit_type, description)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, name`,
+          [product.name, product.units_per_package, product.unit_type, product.description]
+        );
+        console.log(`✅ Added: ${result.rows[0].name} (ID: ${result.rows[0].id})`);
+        added++;
+      } catch (err) {
+        if (err.code === '23505') { // Unique constraint violation
+          console.log(`⏭️  Skipped: ${product.name} (already exists)`);
+          skipped++;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    console.log(`\n📊 Summary: ${added} added, ${skipped} skipped\n`);
+
+  } catch (error) {
+    console.error('❌ Error adding products:', error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+asyn# See all products with their IDs
+psql -d salesform_db -c "SELECT id, name FROM products ORDER BY id;"
+
+# Then delete the one you want
+psql -d salesform_db -c "DELETE FROM products WHERE id = 2;"c function deleteProducts() {
+  const client = await pool.connect();
+
+  try {
+    if (PRODUCTS_TO_DELETE.length === 0) {
+      console.log('ℹ️  No products marked for deletion\n');
+      return;
+    }
+
+    console.log('🗑️  DELETING PRODUCTS...\n');
+
+    let deleted = 0;
+
+    for (const product of PRODUCTS_TO_DELETE) {
+      try {
+        let result;
+        if (product.id) {
+          result = await client.query(
+            'DELETE FROM products WHERE id = $1 RETURNING name',
+            [product.id]
+          );
+        } else if (product.name) {
+          result = await client.query(
+            'DELETE FROM products WHERE name = $1 RETURNING name',
+            [product.name]
+          );
+        }
+
+        if (result.rowCount > 0) {
+          console.log(`✅ Deleted: ${result.rows[0].name}`);
+          deleted++;
+        } else {
+          console.log(`⚠️  Not found: ${product.name || product.id}`);
+        }
+      } catch (err) {
+        if (err.code === '23503') { // Foreign key violation
+          console.log(`❌ Cannot delete: ${product.name || product.id} (used in distributions/inventory)`);
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    console.log(`\n📊 Deleted: ${deleted} products\n`);
+
+  } catch (error) {
+    console.error('❌ Error deleting products:', error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function showProducts() {
+  const client = await pool.connect();
+
+  try {
+    console.log('═══════════════════════════════════════════════');
+    console.log('📋 CURRENT PRODUCTS IN DATABASE:');
+    console.log('═══════════════════════════════════════════════\n');
+
+    const result = await client.query(`
+      SELECT 
+        id, 
+        name, 
+        units_per_package, 
+        unit_type,
+        is_active,
+        description
+      FROM products 
+      ORDER BY unit_type DESC, name
+    `);
+
+    console.table(result.rows);
+
+    console.log('═══════════════════════════════════════════════\n');
+
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function main() {
+  try {
+    // Delete products first
+    await deleteProducts();
+    
+    // Add new products
+    await addProducts();
+    
+    // Show final list
+    await showProducts();
+
+    console.log('✅ Product management completed successfully!\n');
+    process.exit(0);
+
+  } catch (error) {
+    console.error('❌ Failed:', error);
+    process.exit(1);
+  }
+}
+
+// Run the script
+main();

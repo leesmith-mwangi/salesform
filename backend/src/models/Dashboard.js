@@ -10,9 +10,9 @@ class Dashboard {
       const stockQuery = `
         SELECT
           COUNT(*) as total_products,
-          SUM(current_stock) as total_stock_crates,
-          SUM(total_purchased) as total_purchased_crates,
-          SUM(total_distributed) as total_distributed_crates
+          SUM(current_stock) as total_stock_units,
+          SUM(total_added) as total_added_units,
+          SUM(total_distributed) as total_distributed_units
         FROM v_current_stock
       `;
       const stockResult = await client.query(stockQuery);
@@ -21,17 +21,42 @@ class Dashboard {
       const distributionQuery = `
         SELECT
           COUNT(*) as total_distributions,
-          SUM(quantity_crates) as total_crates_distributed,
+          SUM(quantity) as total_units_distributed,
           SUM(total_value) as total_revenue
         FROM distributions
       `;
       const distributionResult = await client.query(distributionQuery);
 
+      // Get total purchase cost
+      const purchaseCostQuery = `
+        SELECT
+          COALESCE(SUM(quantity * purchase_price_per_unit), 0) as total_purchase_cost
+        FROM inventory
+      `;
+      const purchaseCostResult = await client.query(purchaseCostQuery);
+
+      // Get profit summary
+      const profitQuery = `
+        SELECT
+          COALESCE(SUM(d.total_value), 0) as total_revenue,
+          COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 0) as total_cost,
+          COALESCE(SUM(d.total_value), 0) - COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 0) as total_profit
+        FROM distributions d
+        LEFT JOIN (
+          SELECT 
+            product_id,
+            AVG(purchase_price_per_unit) as avg_purchase_price
+          FROM inventory
+          GROUP BY product_id
+        ) avg_cost ON d.product_id = avg_cost.product_id
+      `;
+      const profitResult = await client.query(profitQuery);
+
       // Get recent activity (last 30 days)
       const recentQuery = `
         SELECT
           COUNT(*) as recent_distributions,
-          SUM(quantity_crates) as recent_crates,
+          SUM(quantity) as recent_units,
           SUM(total_value) as recent_revenue
         FROM distributions
         WHERE distribution_date >= CURRENT_DATE - 30
@@ -55,7 +80,8 @@ class Dashboard {
         SELECT
           product_id,
           product_name,
-          total_crates_distributed,
+          unit_type,
+          total_units_distributed,
           total_revenue
         FROM v_product_distribution_summary
         ORDER BY total_revenue DESC
@@ -73,6 +99,8 @@ class Dashboard {
       return {
         stock: stockResult.rows[0],
         distributions: distributionResult.rows[0],
+        purchase_costs: purchaseCostResult.rows[0],
+        profit: profitResult.rows[0],
         recent_activity: recentResult.rows[0],
         low_stock_alerts: lowStockResult.rows,
         top_products: topProductsResult.rows,
@@ -201,6 +229,94 @@ class Dashboard {
 
     const result = await pool.query(query, [days, limit]);
     return result.rows;
+  }
+
+  // Get profit analysis by product
+  static async getProfitAnalysisByProduct() {
+    const query = `
+      SELECT
+        p.id as product_id,
+        p.name as product_name,
+        p.unit_type,
+        -- Purchase data
+        COALESCE(SUM(i.quantity * i.purchase_price_per_unit), 0) as total_purchase_cost,
+        COALESCE(AVG(i.purchase_price_per_unit), 0) as avg_purchase_price,
+        COALESCE(SUM(i.quantity), 0) as total_purchased_units,
+        -- Distribution data
+        COALESCE(SUM(d.quantity), 0) as total_distributed_units,
+        COALESCE(SUM(d.total_value), 0) as total_revenue,
+        COALESCE(AVG(d.price_per_unit), 0) as avg_selling_price,
+        -- Profit calculations
+        COALESCE(AVG(d.price_per_unit), 0) - COALESCE(AVG(i.purchase_price_per_unit), 0) as margin_per_unit,
+        COALESCE(SUM(d.total_value), 0) - COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 0) as total_profit,
+        -- Profit percentage
+        CASE 
+          WHEN COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 0) > 0 
+          THEN ((COALESCE(SUM(d.total_value), 0) - COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 0)) / 
+                COALESCE(SUM(d.quantity * COALESCE(avg_cost.avg_purchase_price, 0)), 1) * 100)
+          ELSE 0 
+        END as profit_percentage
+      FROM products p
+      LEFT JOIN inventory i ON p.id = i.product_id
+      LEFT JOIN distributions d ON p.id = d.product_id
+      LEFT JOIN (
+        SELECT 
+          product_id,
+          AVG(purchase_price_per_unit) as avg_purchase_price
+        FROM inventory
+        GROUP BY product_id
+      ) avg_cost ON p.id = avg_cost.product_id
+      WHERE p.is_active = true
+      GROUP BY p.id, p.name, p.unit_type
+      HAVING COALESCE(SUM(d.quantity), 0) > 0 OR COALESCE(SUM(i.quantity), 0) > 0
+      ORDER BY total_profit DESC
+    `;
+
+    const result = await pool.query(query);
+    return result.rows;
+  }
+
+  // Get overall profit summary
+  static async getProfitSummary() {
+    const query = `
+      SELECT
+        -- Total purchase costs
+        COALESCE(SUM(i.quantity * i.purchase_price_per_unit), 0) as total_purchase_cost,
+        COALESCE(SUM(i.quantity), 0) as total_purchased_units,
+        -- Total revenue from distributions
+        COALESCE(SUM(d.total_value), 0) as total_revenue,
+        COALESCE(SUM(d.quantity), 0) as total_distributed_units,
+        -- Cost of goods sold (based on avg purchase price per product)
+        COALESCE(SUM(d.quantity * avg_cost.avg_purchase_price), 0) as total_cogs,
+        -- Gross profit
+        COALESCE(SUM(d.total_value), 0) - COALESCE(SUM(d.quantity * avg_cost.avg_purchase_price), 0) as gross_profit,
+        -- Profit margin percentage
+        CASE 
+          WHEN COALESCE(SUM(d.quantity * avg_cost.avg_purchase_price), 0) > 0 
+          THEN ((COALESCE(SUM(d.total_value), 0) - COALESCE(SUM(d.quantity * avg_cost.avg_purchase_price), 0)) / 
+                COALESCE(SUM(d.quantity * avg_cost.avg_purchase_price), 1) * 100)
+          ELSE 0 
+        END as profit_margin_percentage
+      FROM (
+        SELECT DISTINCT product_id 
+        FROM inventory
+        UNION
+        SELECT DISTINCT product_id 
+        FROM distributions
+      ) products
+      LEFT JOIN inventory i ON products.product_id = i.product_id
+      LEFT JOIN distributions d ON products.product_id = d.product_id
+      LEFT JOIN (
+        SELECT 
+          product_id,
+          AVG(purchase_price_per_unit) as avg_purchase_price
+        FROM inventory
+        GROUP BY product_id
+      ) avg_cost ON products.product_id = avg_cost.product_id
+    `;
+
+    const result = await pool.query(query);
+    return result.rows[0];
   }
 }
 

@@ -7,7 +7,8 @@ class Inventory {
       SELECT
         i.*,
         p.name as product_name,
-        p.bottles_per_crate
+        p.units_per_package,
+        p.unit_type
       FROM inventory i
       JOIN products p ON i.product_id = p.id
       ORDER BY i.date_added DESC, i.created_at DESC
@@ -24,8 +25,8 @@ class Inventory {
       SELECT
         i.*,
         p.name as product_name,
-        p.price_per_crate as current_price_per_crate,
-        p.bottles_per_crate
+        p.units_per_package,
+        p.unit_type
       FROM inventory i
       JOIN products p ON i.product_id = p.id
       WHERE i.id = $1
@@ -41,7 +42,8 @@ class Inventory {
       SELECT
         i.*,
         p.name as product_name,
-        p.bottles_per_crate
+        p.units_per_package,
+        p.unit_type
       FROM inventory i
       JOIN products p ON i.product_id = p.id
       WHERE i.product_id = $1
@@ -57,8 +59,9 @@ class Inventory {
   static async addStock(inventoryData) {
     const {
       product_id,
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
+      unit_type,
       supplier_name,
       supplier_contact,
       date_added,
@@ -68,21 +71,23 @@ class Inventory {
     const query = `
       INSERT INTO inventory (
         product_id,
-        quantity_crates,
-        purchase_price_per_crate,
+        quantity,
+        purchase_price_per_unit,
+        unit_type,
         supplier_name,
         supplier_contact,
         date_added,
         notes
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
 
     const values = [
       product_id,
-      quantity_crates,
-      purchase_price_per_crate || null,
+      quantity,
+      purchase_price_per_unit || null,
+      unit_type || 'crate',
       supplier_name || null,
       supplier_contact || null,
       date_added || new Date(),
@@ -96,8 +101,8 @@ class Inventory {
   // Update inventory record
   static async update(id, inventoryData) {
     const {
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
       supplier_name,
       supplier_contact,
       date_added,
@@ -107,8 +112,8 @@ class Inventory {
     const query = `
       UPDATE inventory
       SET
-        quantity_crates = COALESCE($1, quantity_crates),
-        purchase_price_per_crate = COALESCE($2, purchase_price_per_crate),
+        quantity = COALESCE($1, quantity),
+        purchase_price_per_unit = COALESCE($2, purchase_price_per_unit),
         supplier_name = COALESCE($3, supplier_name),
         supplier_contact = COALESCE($4, supplier_contact),
         date_added = COALESCE($5, date_added),
@@ -119,8 +124,8 @@ class Inventory {
     `;
 
     const values = [
-      quantity_crates,
-      purchase_price_per_crate,
+      quantity,
+      purchase_price_per_unit,
       supplier_name,
       supplier_contact,
       date_added,
@@ -142,7 +147,7 @@ class Inventory {
   // Get total stock purchased for a product
   static async getTotalPurchased(productId) {
     const query = `
-      SELECT COALESCE(SUM(quantity_crates), 0) as total
+      SELECT COALESCE(SUM(quantity), 0) as total
       FROM inventory
       WHERE product_id = $1
     `;
@@ -157,7 +162,8 @@ class Inventory {
       SELECT
         i.*,
         p.name as product_name,
-        p.bottles_per_crate
+        p.units_per_package,
+        p.unit_type
       FROM inventory i
       JOIN products p ON i.product_id = p.id
       WHERE i.date_added >= CURRENT_DATE - $1
@@ -176,8 +182,8 @@ class Inventory {
         p.id as product_id,
         p.name as product_name,
         COUNT(i.id) as purchase_count,
-        SUM(i.quantity_crates) as total_crates_purchased,
-        AVG(i.purchase_price_per_crate) as avg_purchase_price,
+        SUM(i.quantity) as total_crates_purchased,
+        AVG(i.purchase_price_per_unit) as avg_purchase_price,
         MIN(i.date_added) as first_purchase_date,
         MAX(i.date_added) as last_purchase_date
       FROM products p

@@ -43,6 +43,12 @@ function Dashboard({ onNavigate }) {
 
   const criticalAlerts = getCriticalAlerts();
 
+  // Calculate profit metrics safely
+  const totalProfit = Number(metrics.profit?.total_profit) || 0;
+  const totalRevenue = Number(metrics.distributions?.total_revenue) || 0;
+  const totalCost = Number(metrics.profit?.total_cost) || 0;
+  const profitMargin = totalCost > 0 ? ((totalProfit / totalCost) * 100) : 0;
+
   return (
     <div>
       <h2>Dashboard Overview</h2>
@@ -51,36 +57,70 @@ function Dashboard({ onNavigate }) {
       <div className="metrics-grid">
         <div className="metric-card green">
           <div className="metric-label">Current Stock</div>
-          <div className="metric-value">{metrics.stock.total_stock_crates}</div>
-          <div className="metric-label">crates</div>
+          <div className="metric-value">{metrics.stock.total_stock_units}</div>
+          <div className="metric-label">units</div>
         </div>
 
         <div className="metric-card blue">
-          <div className="metric-label">Total Purchased</div>
-          <div className="metric-value">{metrics.stock.total_purchased_crates}</div>
-          <div className="metric-label">crates</div>
+          <div className="metric-label">Total Added</div>
+          <div className="metric-value">{metrics.stock.total_added_units}</div>
+          <div className="metric-label">units</div>
         </div>
 
         <div className="metric-card orange">
           <div className="metric-label">Total Distributed</div>
-          <div className="metric-value">{metrics.stock.total_distributed_crates}</div>
-          <div className="metric-label">crates</div>
+          <div className="metric-value">{metrics.stock.total_distributed_units}</div>
+          <div className="metric-label">units</div>
         </div>
 
         <div className="metric-card">
           <div className="metric-label">Total Revenue</div>
           <div className="metric-value">
-            {parseInt(metrics.distributions.total_revenue || 0).toLocaleString()}
+            {totalRevenue.toLocaleString()}
           </div>
           <div className="metric-label">KSH</div>
         </div>
+      </div>
+
+      {/* Financial Overview */}
+      <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <h3 style={{ color: 'white' }}>💰 Financial Overview</h3>
+        <div className="metrics-grid" style={{ marginTop: '1rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Total Purchase Cost</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
+              {(Number(metrics.purchase_costs?.total_purchase_cost) || 0).toLocaleString()} KSH
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Total Revenue</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
+              {totalRevenue.toLocaleString()} KSH
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Gross Profit</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0', color: totalProfit >= 0 ? '#90EE90' : '#FF6B6B' }}>
+              {totalProfit.toLocaleString()} KSH
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Profit Margin</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0', color: profitMargin >= 0 ? '#90EE90' : '#FF6B6B' }}>
+              {profitMargin.toFixed(1)}%
+            </div>
+          </div>
+        </div>
+        <p style={{ textAlign: 'center', marginTop: '1rem', opacity: 0.9, fontSize: '0.9rem' }}>
+          💡 View detailed profit analysis in the Reports section
+        </p>
       </div>
 
       {/* Critical Alerts */}
       {criticalAlerts.length > 0 && (
         <div className="card alert-critical">
           <h3>🚨 Critical Alerts</h3>
-          <p className="alert-subtitle">Products with very low or no stock (less than 5 crates)</p>
+          <p className="alert-subtitle">Products with very low or no stock (less than 5 units)</p>
           <table>
             <thead>
               <tr>
@@ -94,7 +134,7 @@ function Dashboard({ onNavigate }) {
                 <tr key={alert.product_id}>
                   <td><strong>{alert.product_name}</strong></td>
                   <td style={{ color: alert.current_stock === '0' ? '#c0392b' : '#e67e22', fontWeight: 'bold' }}>
-                    {alert.current_stock} crates
+                    {alert.current_stock} units
                   </td>
                   <td>
                     <span className={`stock-badge stock-${alert.current_stock === '0' ? 'red' : 'orange'}`}>
@@ -131,7 +171,7 @@ function Dashboard({ onNavigate }) {
                   <td>{new Date(dist.distribution_date).toLocaleDateString()}</td>
                   <td>{dist.product_name}</td>
                   <td>{dist.mess_name}</td>
-                  <td>{dist.quantity_crates} crates</td>
+                  <td>{dist.quantity} units</td>
                   <td>{parseInt(dist.total_value).toLocaleString()} KSH</td>
                 </tr>
               ))}

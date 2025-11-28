@@ -5,10 +5,11 @@ function AddStock() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [formData, setFormData] = useState({
     product_id: '',
-    quantity_crates: '',
-    purchase_price_per_crate: '',
+    quantity: '',
+    purchase_price_per_unit: '',
     supplier_name: '',
     supplier_contact: '',
     notes: ''
@@ -28,10 +29,17 @@ function AddStock() {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Update selected product when product is chosen
+    if (name === 'product_id' && value) {
+      const product = products.find(p => p.id === parseInt(value));
+      setSelectedProduct(product);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -42,8 +50,10 @@ function AddStock() {
     try {
       const response = await addStock({
         ...formData,
-        quantity_crates: parseInt(formData.quantity_crates),
-        purchase_price_per_crate: parseFloat(formData.purchase_price_per_crate)
+        product_id: parseInt(formData.product_id),
+        quantity: parseInt(formData.quantity),
+        purchase_price_per_unit: parseFloat(formData.purchase_price_per_unit),
+        unit_type: selectedProduct?.unit_type || 'crate'
       });
 
       setMessage({
@@ -54,12 +64,13 @@ function AddStock() {
       // Reset form
       setFormData({
         product_id: '',
-        quantity_crates: '',
-        purchase_price_per_crate: '',
+        quantity: '',
+        purchase_price_per_unit: '',
         supplier_name: '',
         supplier_contact: '',
         notes: ''
       });
+      setSelectedProduct(null);
     } catch (err) {
       setMessage({
         type: 'error',
@@ -80,6 +91,31 @@ function AddStock() {
         </div>
       )}
 
+      {/* Purchase Cost Preview */}
+      {formData.quantity && formData.purchase_price_per_unit && (
+        <div style={{ 
+          padding: '1rem', 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+          borderRadius: '8px', 
+          color: 'white',
+          marginBottom: '1.5rem'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Total Purchase Cost:</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginTop: '0.3rem' }}>
+                {(parseInt(formData.quantity) * parseFloat(formData.purchase_price_per_unit)).toLocaleString()} KSH
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                {formData.quantity} {selectedProduct?.unit_type === 'piece' ? 'pieces' : 'crates'} × {parseFloat(formData.purchase_price_per_unit).toLocaleString()} KSH
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Product *</label>
@@ -92,34 +128,40 @@ function AddStock() {
             <option value="">Select Product</option>
             {products.map((product) => (
               <option key={product.id} value={product.id}>
-                {product.name} - {product.price_per_crate} KSH/crate
+                {product.name} ({product.unit_type === 'piece' ? 'Piece' : 'Crate'})
               </option>
             ))}
           </select>
         </div>
 
         <div className="form-group">
-          <label>Quantity (Crates) *</label>
+          <label>
+            Quantity ({selectedProduct?.unit_type === 'piece' ? 'Pieces' : 'Crates'}) *
+          </label>
           <input
-            type="number"
-            name="quantity_crates"
-            value={formData.quantity_crates}
+            type="text"
+            name="quantity"
+            value={formData.quantity}
             onChange={handleChange}
             min="1"
             required
+            placeholder={`Enter number of ${selectedProduct?.unit_type === 'piece' ? 'pieces' : 'crates'}`}
           />
         </div>
 
         <div className="form-group">
-          <label>Purchase Price per Crate *</label>
+          <label>
+            Purchase Price per {selectedProduct?.unit_type === 'piece' ? 'Piece' : 'Crate'} *
+          </label>
           <input
             type="number"
-            name="purchase_price_per_crate"
-            value={formData.purchase_price_per_crate}
+            name="purchase_price_per_unit"
+            value={formData.purchase_price_per_unit}
             onChange={handleChange}
             min="0"
             step="0.01"
             required
+            placeholder="Enter purchase price"
           />
         </div>
 

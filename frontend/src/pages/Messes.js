@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getMesses, getDetailedDistributionsByMess } from '../services/api';
+import { 
+  getMesses, 
+  getDetailedDistributionsByMess
+} from '../services/api';
 
 function Messes() {
   const [messes, setMesses] = useState([]);
@@ -50,6 +53,7 @@ function Messes() {
   if (selectedMess) {
     const details = getMessDetails(selectedMess.id);
 
+
     return (
       <div>
         <button className="btn-back" onClick={handleBackToList}>
@@ -60,7 +64,6 @@ function Messes() {
           <div className="mess-detail-header">
             <div>
               <h2>{selectedMess.name}</h2>
-              <p className="mess-location">📍 {selectedMess.location}</p>
             </div>
             <div className="mess-contact">
               <p><strong>Contact Person:</strong> {selectedMess.contact_person}</p>
@@ -107,8 +110,8 @@ function Messes() {
                       <tr key={index}>
                         <td>{new Date(product.distribution_date).toLocaleDateString()}</td>
                         <td><strong>{product.product_name}</strong></td>
-                        <td>{product.quantity_crates} crates</td>
-                        <td>{parseInt(product.price_per_crate).toLocaleString()} KSH</td>
+                        <td>{product.quantity} crates</td>
+                        <td>{parseInt(product.price_per_unit).toLocaleString()} KSH</td>
                         <td>{parseInt(product.total_value).toLocaleString()} KSH</td>
                       </tr>
                     ))}
@@ -148,7 +151,6 @@ function Messes() {
               </div>
 
               <div className="mess-card-body">
-                <p className="mess-location">📍 {mess.location}</p>
                 <p className="mess-contact">👤 {mess.contact_person}</p>
                 <p className="mess-phone">📞 {mess.phone}</p>
               </div>
