@@ -208,7 +208,7 @@ function DistributeStock() {
         <div className="form-group">
           <label>Price per {selectedProduct?.unit_type === 'piece' ? 'Piece' : 'Crate'} *</label>
           <input
-            type="number"
+            type="text"
             name="price_per_unit"
             value={formData.price_per_unit}
             onChange={handleChange}

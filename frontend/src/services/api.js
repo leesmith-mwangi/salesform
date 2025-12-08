@@ -85,4 +85,10 @@ export const getAttendants = () => api.get('/attendants');
 export const getAttendantsByMess = (messId) => api.get(`/attendants/mess/${messId}`);
 export const createAttendant = (data) => api.post('/attendants', data);
 
+// Product Management
+export const getAllProducts = () => api.get('/products');
+export const addProduct = (data) => api.post('/products', data);
+export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
+export const deleteProduct = (id) => api.delete(`/products/${id}`);
+
 export default api;

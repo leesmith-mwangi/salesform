@@ -48,20 +48,20 @@ exports.getProduct = async (req, res, next) => {
 // Create product
 exports.createProduct = async (req, res, next) => {
   try {
-    const { name, price_per_crate, bottles_per_crate, description } = req.body;
+    const { name, unit_type, units_per_package, description } = req.body;
 
     // Validation
-    if (!name || !price_per_crate) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        error: 'Name and price_per_crate are required'
+        error: 'Product name is required'
       });
     }
 
-    if (price_per_crate <= 0) {
+    if (!unit_type || !['crate', 'piece'].includes(unit_type)) {
       return res.status(400).json({
         success: false,
-        error: 'Price must be greater than 0'
+        error: 'Valid unit_type is required (crate or piece)'
       });
     }
 
@@ -76,8 +76,8 @@ exports.createProduct = async (req, res, next) => {
 
     const product = await Product.create({
       name,
-      price_per_crate,
-      bottles_per_crate: bottles_per_crate || 30,
+      unit_type,
+      units_per_package: units_per_package || 1,
       description
     });
 
@@ -95,7 +95,7 @@ exports.createProduct = async (req, res, next) => {
 exports.updateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, price_per_crate, bottles_per_crate, description, is_active } = req.body;
+    const { name, unit_type, units_per_package, description, is_active } = req.body;
 
     // Check if product exists
     const existing = await Product.findById(id);
@@ -106,11 +106,11 @@ exports.updateProduct = async (req, res, next) => {
       });
     }
 
-    // Validate price if provided
-    if (price_per_crate !== undefined && price_per_crate <= 0) {
+    // Validate unit_type if provided
+    if (unit_type && !['crate', 'piece'].includes(unit_type)) {
       return res.status(400).json({
         success: false,
-        error: 'Price must be greater than 0'
+        error: 'Valid unit_type is required (crate or piece)'
       });
     }
 
@@ -127,8 +127,8 @@ exports.updateProduct = async (req, res, next) => {
 
     const product = await Product.update(id, {
       name,
-      price_per_crate,
-      bottles_per_crate,
+      unit_type,
+      units_per_package,
       description,
       is_active
     });

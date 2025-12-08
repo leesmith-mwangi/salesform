@@ -27,28 +27,28 @@ class Product {
 
   // Create new product
   static async create(productData) {
-    const { name, price_per_unit, units_per_package, description } = productData;
+    const { name, unit_type, units_per_package, description } = productData;
 
     const query = `
-      INSERT INTO products (name, price_per_unit, units_per_package, description)
+      INSERT INTO products (name, unit_type, units_per_package, description)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
-    const values = [name, price_per_unit, units_per_package || 30, description || null];
+    const values = [name, unit_type || 'crate', units_per_package || 1, description || null];
     const result = await pool.query(query, values);
     return result.rows[0];
   }
 
   // Update product
   static async update(id, productData) {
-    const { name, price_per_unit, units_per_package, description, is_active } = productData;
+    const { name, unit_type, units_per_package, description, is_active } = productData;
 
     const query = `
       UPDATE products
       SET
         name = COALESCE($1, name),
-        price_per_unit = COALESCE($2, price_per_unit),
+        unit_type = COALESCE($2, unit_type),
         units_per_package = COALESCE($3, units_per_package),
         description = COALESCE($4, description),
         is_active = COALESCE($5, is_active),
@@ -57,7 +57,7 @@ class Product {
       RETURNING *
     `;
 
-    const values = [name, price_per_unit, units_per_package, description, is_active, id];
+    const values = [name, unit_type, units_per_package, description, is_active, id];
     const result = await pool.query(query, values);
     return result.rows[0];
   }

@@ -10,6 +10,7 @@ import DistributeStock from './pages/DistributeStock';
 import MessFinancials from './pages/MessFinancials';
 import ProfitAnalysis from './pages/ProfitAnalysis';
 import ChangePassword from './pages/ChangePassword';
+import ProductManagement from './pages/ProductManagement';
 import { verifyToken } from './services/api';
 import './App.css';
 
@@ -98,6 +99,8 @@ function App() {
         return <ProfitAnalysis onNavigate={setCurrentPage} />;
       case 'changePassword':
         return <ChangePassword />;
+      case 'productManagement':
+        return <ProductManagement />;
       case 'addStock':
         return <AddStock />;
       case 'distribute':
@@ -190,6 +193,19 @@ function App() {
                 onClick={() => setCurrentPage('profit')}
               >
                 💰 Profit Analysis
+              </button>
+            </div>
+          </div>
+
+          {/* Management Section */}
+          <div className="nav-section">
+            <div className="nav-section-label">Management</div>
+            <div className="nav-links">
+              <button
+                className={currentPage === 'productManagement' ? 'active' : ''}
+                onClick={() => setCurrentPage('productManagement')}
+              >
+                🛍️ Manage Products
               </button>
             </div>
           </div>
