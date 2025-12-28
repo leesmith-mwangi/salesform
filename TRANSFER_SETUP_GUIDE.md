@@ -8,26 +8,46 @@ Complete guide to transfer and setup the Sales & Distribution Management System 
 
 - **Frontend:** React application
 - **Backend:** Node.js/Express API server
-- **Database:** PostgreSQL with schema and initial data
+- **Database:** PostgreSQL dump (`salesform_db_dump.dump`) plus schema scripts
 - **Documentation:** All guides and setup files
 
 ---
 
 ## 🎯 Method 1: Transfer via ZIP/USB (Recommended)
 
-### Step 1: Package the Project
-
-On your PC, create a clean package:
-
-```bash
-cd /home/smith/projects
 tar -czf salesform-project.tar.gz salesform/
+### Step 1: Prepare the Database Dump (Required)
+
+Create a fresh PostgreSQL dump from your machine so the client gets your latest data.
+
+**Windows (PowerShell):**
+```powershell
+# Run inside project root (d:/My Projects/)
+pg_dump -U postgres -Fc salesform_db > salesform/backend/backups/salesform_db_dump.dump
 ```
 
-Or create a ZIP:
+**Linux/Mac:**
 ```bash
 cd /home/smith/projects
-zip -r salesform-project.zip salesform/ -x "*/node_modules/*" -x "*/.git/*"
+pg_dump -U postgres -Fc salesform_db > salesform/backend/backups/salesform_db_dump.dump
+```
+
+Expected file: `backend/backups/salesform_db_dump.dump`
+
+### Step 2: Package the Project
+
+On your PC, create a clean archive **including the dump** and excluding heavy folders:
+
+**Windows (PowerShell):**
+```powershell
+cd "d:/My Projects"
+Compress-Archive -Path "salesform/*" -DestinationPath "salesform-project.zip" -Force -CompressionLevel Optimal -Exclude *.git*, node_modules
+```
+
+**Linux/Mac:**
+```bash
+cd /home/smith/projects
+tar --exclude='**/node_modules' --exclude='**/.git' -czf salesform-project.tar.gz salesform/
 ```
 
 **Transfer this file** to client's PC via:
@@ -38,7 +58,7 @@ zip -r salesform-project.zip salesform/ -x "*/node_modules/*" -x "*/.git/*"
 
 ---
 
-### Step 2: Client PC Prerequisites
+### Step 3: Client PC Prerequisites
 
 Client must install these first:
 
@@ -74,7 +94,7 @@ psql --version
 
 ---
 
-### Step 3: Extract and Setup Project
+### Step 4: Extract and Setup Project
 
 On client's PC:
 
@@ -97,7 +117,7 @@ npm install
 
 ---
 
-### Step 4: Database Setup
+### Step 5: Database Setup
 
 #### Create Database
 
@@ -121,6 +141,24 @@ CREATE DATABASE salesform_db;
 \q
 ```
 
+#### Restore from Provided Dump (Preferred)
+
+If `backend/backups/salesform_db_dump.dump` is in the archive, restore it instead of running the seed scripts.
+
+**Windows (PowerShell):**
+```powershell
+cd "d:/My Projects/salesform"
+pg_restore -U postgres -d salesform_db "backend/backups/salesform_db_dump.dump"
+```
+
+**Linux/Mac:**
+```bash
+cd /home/smith/projects/salesform
+pg_restore -U postgres -d salesform_db backend/backups/salesform_db_dump.dump
+```
+
+If the dump is missing, use the setup scripts below.
+
 #### Configure Database Connection
 
 Edit `backend/src/config/database.js`:
@@ -143,6 +181,8 @@ const pool = new Pool({
 
 #### Initialize Database Schema
 
+> Skip this step if you already restored from `salesform_db_dump.dump`.
+
 ```bash
 cd backend
 
@@ -162,7 +202,7 @@ You should see:
 
 ---
 
-### Step 5: Add Initial Products
+### Step 6: Add Initial Products
 
 Edit `backend/add-products.js` to add client's products:
 
@@ -191,7 +231,7 @@ node add-products.js
 
 ---
 
-### Step 6: Start the Application
+### Step 7: Start the Application
 
 #### Terminal 1 - Start Backend:
 ```bash
@@ -215,7 +255,7 @@ Browser should open automatically to `http://localhost:3000`
 
 ---
 
-### Step 7: First Login
+### Step 8: First Login
 
 **Default credentials:**
 - Username: `admin`
@@ -269,7 +309,7 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-Then follow Steps 4-7 from Method 1.
+Then follow Steps 5-8 from Method 1.
 
 ---
 
@@ -328,6 +368,7 @@ Print this for your client:
 - [ ] Install PostgreSQL (v14+)
 - [ ] Extract project files
 - [ ] Update database credentials in `backend/src/config/database.js`
+- [ ] Restore database from `backend/backups/salesform_db_dump.dump` (or run setup scripts if missing)
 - [ ] Run `npm install` in backend folder
 - [ ] Run `npm install` in frontend folder
 - [ ] Run `node src/config/setup.js` to create tables
