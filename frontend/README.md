@@ -1,3 +1,14 @@
+# PM2 production serve (Windows)
+
+Use PM2 to run the built frontend automatically on boot.
+
+1. Install dependencies: `npm install` (includes PM2 and serve).
+2. Build the static assets: `npm run build`.
+3. Start under PM2: `npx pm2 start ecosystem.config.cjs --env production`.
+4. Persist the process list: `npx pm2 save`.
+5. Enable autostart on Windows (run from an elevated shell): `npx pm2 startup windows --service-name salesform-frontend-pm2`. Run the command PM2 prints to finalize.
+6. After code updates: `npm run build` then `npm run pm2:restart`.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
